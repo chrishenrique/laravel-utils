@@ -1,0 +1,39 @@
+{
+    "name": "chrishenrique/laravel-utils",
+    "description": "código que utilizo com frequência em projetos",
+    "keywords": ["laravel", "utils", "laravel-package", "php"],
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "ChrisHenrique\\LaravelUtils\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Christiano Costa",
+            "email": "chrishenrique16@hotmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2 | ^8.0",
+        "laravel/framework": "^7.0 | ^8.0 | ^9.0 | ^10.0 | ^11.0"
+    },
+     "suggest": {
+        "ext-bcmath": "Used for unit conversion and imagecrash protection"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ChrisHenrique\\LaravelUtils\\Providers\\UtilsServiceProvider"
+            ],"aliases": {
+                "Str": "ChrisHenrique\\LaravelUtils\\Str",
+                "Number": "ChrisHenrique\\LaravelUtils\\Number",
+                "Utils": "ChrisHenrique\\LaravelUtils\\Utils",
+                "Phone": "ChrisHenrique\\LaravelUtils\\Phone"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
