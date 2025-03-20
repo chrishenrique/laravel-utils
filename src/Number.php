@@ -3,7 +3,11 @@
 declare(strict_types=1);
 namespace ChrisHenrique\LaravelUtils;
 
+
 use Str;
+use Override;
+use Illuminate\Support\Number as BaseNumber;
+// https://github.com/laravel/framework/blob/11.x/src/Illuminate/Support/Number.php
 
 /**
  * Class Number
@@ -12,8 +16,8 @@ use Str;
  * @package  ChrisHenrique\LaravelUtils
  * @author   Christiano Costa <chrishenrique16@hotmail.com>
  */
-class Number {
-
+class Number extends BaseNumber
+{
     /**
      * Thousands map
      * @var array
@@ -54,136 +58,93 @@ class Number {
     protected static $format = 'br';
 
     /**
-     * Set the decimal precision configuration.
-     * @return mixed
+     * Value
+     * @var string|float
      */
+    protected static $value = null;
+
+    public function __construct($value = null)
+    {
+        static::$value = $value;
+    }
+
+
+    public static function setValue($value)
+    {
+        static::$value = $value;
+
+        return new static();
+    }
+
+
     public static function setPrecision($precision)
     {
-        self::$precision = $precision;
+        static::$precision = $precision;
 
         return new static();
     }
 
-    /**
-     * Set the decimal precision configuration.
-     * @return mixed
-     */
+
     public static function setFormat($format)
     {
-        self::$format = $format;
+        static::$format = $format;
 
         return new static();
     }
 
-    /**
-     * Return the thousands separator based on decimal format application.
-     * @return mixed
-     */
+
     public static function thousands()
     {
         return static::$thousands[self::$format];
     }
 
-    /**
-     * Return the decimal separator based on decimal format application.
-     * @return mixed
-     */
+
     public static function decimal()
     {
         return static::$decimal[self::$format];
     }
 
-    /**
-     * Return the format configuration.
-     * @return mixed
-     */
-    public static function format()
-    {
-        return static::$format;
-    }
-
-    /**
-     * Return the decimal precision configuration.
-     * @return mixed
-     */
-    public static function precision()
-    {
-        return static::$precision;
-    }
-
-    /**
-     * Return the money precision configuration.
-     * @return mixed
-     */
-    public static function moneyPrecision()
-    {
-        return static::$precision;
-    }
-
-    /**
-     * Return the decimal separator based on decimal format application.
-     * @return mixed
-     */
+    #[Override]
     public static function currency()
     {
         return static::$currency[self::$format];
     }
 
-    /**
-     * Format a currency value to application configured format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function toIntegerApp($value)
+
+    public static function toIntegerApp(): string
     {
-        return self::toDecimalApp($value, 0);
+        return self::toDecimalApp(static::$value, 0);
     }
 
-    /**
-     * Return a number from a decimal value in application configured format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function fromIntegerApp($value)
+
+    public static function fromIntegerApp(): string
     {
-        return self::fromDecimalApp($value, 0);
+        return self::fromDecimalApp(static::$value, 0);
     }
 
-	/**
-     * Format a currency value to application configured format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function toMoneyApp($value, $precision = null, $format = 'br')
-    {
-        $number = self::toDecimalApp($value, $precision);
 
-        return $number ? static::$currency[$format].' '.$number : '';
+    public static function toMoneyApp(): string
+    {
+        $number = self::toDecimalApp(static::$value, static::$precision);
+
+        return $number ? static::currency().' '.$number : '';
     }
 
-    /**
-     * Return a number from a currency value in application configured format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function fromMoneyApp($value, $precision = null, $format = 'br')
-    {
-        $number = self::fromDecimalApp($value, $precision);
 
-        return $number ? static::$currency[$format].' '.$number : '';
+    public static function fromMoneyApp(): string
+    {
+        $number = self::fromDecimalApp(static::$value, static::$precision);
+
+        return $number ? static::currency().' '.$number : '';
     }
 
-    /**
-     * Para decimal da aplicação
-     * Format a decimal value to application configured format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function toDecimalApp($value, $precision = null)
-    {
-        if(is_null($value) || ($value === 'null')) return '';
 
-        $precision = $precision ?? static::precision();
+    public static function toDecimalApp(): string
+    {
+        $value = static::$value;
+        if(is_null($value) || ($value === 'null')) return null;
+
+        $precision = static::$precision;
         $value = str_replace('.', '', $value);
         $parts = explode(',', $value);
         $decimal = count($parts) > 1? $parts[1] : '';
@@ -192,33 +153,25 @@ class Number {
 
         return $value;
     }
-
-    /**
-     * De decimal da aplicação
-     * Return a number from a decimal value in application configured format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function fromDecimalApp($value, $precision = null, $thousands = '.')
+    
+    public static function fromDecimalApp(): string
     {
+        $value = static::$value;
         if(is_null($value) || ($value === 'null')) return '';
 
-        $precision = $precision ?? static::precision();
+        $precision = static::$precision;
         $parts = explode('.', $value);
         $decimal = count($parts) > 1? $parts[1] : '';
-        $value = number_format(self::toFormatApp($value), $precision, ',', $thousands);
+        $value = number_format(self::toFormatApp($value), $precision, ',', static::thousands());
 
         return str_pad($value, $precision - strlen($decimal), '0');
     }
 
-    /**
-     * Return a decimal number in raw format.
-     * @param  mixed $value
-     * @return mixed
-     */
-    public static function toDecimalRaw($value, $precision = null)
+
+    public static function toDecimalRaw(): string
     {
-        $precision = $precision ?? static::precision();
+        $value = static::$value;
+        $precision = static::$precision;
         $parts = explode('.', $value);
         $decimal = count($parts) > 1? $parts[1] : '';
         $value = number_format(self::toFormatApp($value), $precision, '.', '');
@@ -226,125 +179,84 @@ class Number {
         return str_pad($value, $precision - strlen($decimal), '0');
     }
 
-    /**
-     * Return a number with a percentage discount applied.
-     * @param  mixed $value
-     * @param  number $percentage
-     * @return mixed
-     */
-    public static function applyDiscount($value, $percentage = 0)
+
+    public static function applyDiscount($percentage = 0): string
     {
-        return bcsub($value, bcmul($value, bcdiv($percentage, 100)));
+        $value = static::$value;
+        return bcsub($value, bcmul($value, bcdiv((string)$percentage, '100')));
     }
 
-    /**
-     * Return a number with a percentage rate applied.
-     * @param  mixed $value
-     * @param  number $percentage
-     * @return mixed
-     */
-    public static function applyRate($value, $percentage = 0)
+
+    public static function applyRate($percentage = 0): string
     {
-        return bcadd($value, bcmul($value, bcdiv($percentage, 100)));
+        $value = static::$value;
+        return bcadd($value, bcmul($value, bcdiv((string)$percentage, '100')));
     }
 
-    /**
-     * Return a percentage from two values.
-     * @param  number $total
-     * @param  number $part
-     * @return number
-     */
-    public static function perc($total, $part)
+
+    public static function perc($total, $part): float
     {
         $total = floatval($total);
 
-        return floatval($total? bcmul(bcdiv($part, $total, 8), 100, static::precision()) : 0);
+        return floatval($total? bcmul(bcdiv((string)$part, (string)$total, 8), '100', static::$precision) : 0);
     }
 
-    /**
-     * Return a percentage from a value
-     * @param  number $value
-     * @param  number $percentage
-     * @return number
-     */
-    public static function percentage($value, $percentage)
+    #[\Override]
+    public static function percentage($percentage): float
     {
-        return floatval($value? bcdiv(bcmul($percentage, $value, 3), 100, 3) : 0);
+        $value = static::$value;
+        return floatval($value? bcdiv(bcmul((string)$percentage, (string)$value, 3), '100', 3) : 0);
     }
 
-    /**
-     * Return a proportion from two values.
-     * @param  number $total
-     * @param  number $part
-     * @return number
-     */
-    public static function prop($total, $part)
+
+    public static function prop($total, $part): float
     {
         $total2 = floatval($total);
 
-        return floatval($total2? bcdiv(bcmul($part, 100, 8), $total, static::precision()) : 0);
+        return floatval($total2? bcdiv(bcmul((string)$part, '100', 8), (string)$total, static::$precision) : 0);
     }
 
-    /**
-     * Return a value to total by percent.
-     * @param  number $total
-     * @param  number $part
-     * @return number
-     */
-    public static function valueToPerc($total, $percentage)
-    {
-        // $total = floatval($total);
 
-        return floatval(bcmul(bcdiv($percentage, 100, 3), $total, static::precision()));
+    public static function valueToPerc($percentage): float
+    {
+        return floatval(bcmul(bcdiv($percentage, '100', 3), (string)static::$value, static::$precision));
     }
 
-    /**
-     * Check if the value is money app format
-     * @param  mixed $value
-     * @return bool
-     */
-    public static function isMoneyApp($value)
+
+    public static function isMoneyApp(): bool
     {
-        return static::isDecimalApp($value);
+        return static::isDecimalApp(static::$value);
     }
 
-    /**
-     * Check if the value is app format
-     * @param  mixed $value
-     * @param  string $format
-     * @return bool
-     */
-    public static function isDecimalApp($value)
+
+    public static function isDecimalApp(): bool
     {
-        $precision = static::precision();
+        $precision = static::$precision;
         $key = $precision > 0? 1 : 0;
-        $fmt = static::format();
+        $fmt = static::$format;
 
         $patterns = [
             'int' => ['/^\d{1,3}(,\d{3})$/', '/^\d{1,3}(,\d{3})*\.\d{:p}$/'],
             'br'  => ['/^\d{1,3}(\.\d{3})$/', '/^\d{1,3}(\.\d{3})*,\d{:p}$/']
         ];
 
-        $pattern = str_replace(':p', $precision, $patterns[$fmt][$key]);
+        $pattern = str_replace(':p', (string)$precision, $patterns[$fmt][$key]);
 
-        return (bool)preg_match($pattern, (string)$value);
+        return (bool)preg_match($pattern, (string)static::$value);
     }
 
-    public static function truncate($number, $precision = null, $decimal = '.')
+
+    public static function truncate($decimal = '.')
     {
-        $number = str_replace(',', '.', $number);
-        $precision = $precision ?? static::precision();
-        return substr($number, 0, (strpos($number, $decimal) ?: strlen($number)) + $precision + ($precision == 0 ? 0 : 1));
+        $number = str_replace(',', '.', static::$value);
+        $precision = static::$precision;
+        return substr($number, 0, (strpos($number, $decimal) ?: strlen($number)) +$precision + ($precision == 0 ? 0 : 1));
     }
 
-    /**
-     * Format value to international format
-     * @param mixed $value
-     * @return mixed
-     */
-    public static function toFormatApp($value)
+
+    public static function toFormatApp()
     {
-        $value = (string)$value;
+        $value = (string)static::$value;
         $value = str_replace('.', ',', $value);
         $value = Str::replaceLast(',', '.', $value);
         $value = str_replace(',', '', $value);

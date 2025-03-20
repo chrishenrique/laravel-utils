@@ -9,16 +9,28 @@ class UtilsServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        Blade::directive('fromdecimal', function ($data) {
-            return "<?php echo Number::fromDecimalApp($data); ?>";
+        Blade::directive('datetime', function ($data) {
+            return "<?php if($data) echo ($data)->format('d/m/Y H:i'); ?>";
         });
 
-        Blade::directive('frommoney', function ($data) {
-            return "<?php echo Number::fromMoneyApp($data); ?>";
+        Blade::directive('date', function ($data) {
+            return "<?php if($data) echo ($data)->format('d/m/Y'); ?>";
         });
 
-        Blade::directive('frominteger', function ($data) {
-            return "<?php echo Number::fromIntegerApp($data); ?>";
+        Blade::directive('fromdecimal', function ($number) {
+            return "<?php echo number($number)->fromDecimalApp(); ?>";
+        });
+
+        Blade::directive('number', function ($number) {
+            return "<?php echo number($number); ?>";
+        });
+
+        Blade::directive('frommoney', function ($number) {
+            return "<?php echo number($number)->fromMoneyApp(); ?>";
+        });
+
+        Blade::directive('frominteger', function ($number) {
+            return "<?php echo number($number)->fromIntegerApp(); ?>";
         });
     }
 
