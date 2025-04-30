@@ -5,8 +5,9 @@ namespace ChrisHenrique\LaravelUtils;
 
 
 use Str;
-use Override;
 use Illuminate\Support\Number as BaseNumber;
+use Stringable;
+
 // https://github.com/laravel/framework/blob/11.x/src/Illuminate/Support/Number.php
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Support\Number as BaseNumber;
  * @package  ChrisHenrique\LaravelUtils
  * @author   Christiano Costa <chrishenrique16@hotmail.com>
  */
-class Number extends BaseNumber
+class Number extends BaseNumber  implements Stringable
 {
     /**
      * Thousands map
@@ -37,10 +38,10 @@ class Number extends BaseNumber
     ];
 
     /**
-     * Currency map
+     * Symbol currency map
      * @var array
      */
-    protected static $currency = [
+    protected static $symbols = [
         'int' => '$',
         'br'  => 'R$',
     ];
@@ -61,88 +62,62 @@ class Number extends BaseNumber
      * Value
      * @var string|float
      */
-    protected static $value = null;
+    protected $value = null;
 
-    public function __construct($value = null)
+    public function __construct($value = '')
     {
-        static::$value = $value;
+        $this->value = (string)$value;
     }
 
-
-    public static function setValue($value)
+    public function __toString()
     {
-        static::$value = $value;
-
-        return new static();
+        return (string)$this->value;
     }
 
+    public function setValue($value)
+    {
+        $this->value = $value;
+        return new static($this->value);
+    }
 
-    public static function setPrecision($precision)
+    public function setPrecision($precision)
     {
         static::$precision = $precision;
-
-        return new static();
+        return new static($this->value);
     }
 
-
-    public static function setFormat($format)
+    public function setFormat($format)
     {
         static::$format = $format;
-
-        return new static();
+        return new static($this->value);
     }
 
-
-    public static function thousands()
+    public function thousands(): string
     {
         return static::$thousands[self::$format];
     }
 
-
-    public static function decimal()
+    public function decimal(): string
     {
         return static::$decimal[self::$format];
     }
 
-    #[Override]
-    public static function currency()
+    public static function symbol(): string
     {
-        return static::$currency[self::$format];
+        return static::$symbols[self::$format];
     }
 
-
-    public static function toIntegerApp(): string
+    public function toIntegerApp()
     {
-        return self::toDecimalApp(static::$value, 0);
+        $this->value = self::toDecimalApp($this->value, 0);
+        return new static($this->value);
     }
 
-
-    public static function fromIntegerApp(): string
+    public function toDecimalApp(): string
     {
-        return self::fromDecimalApp(static::$value, 0);
-    }
-
-
-    public static function toMoneyApp(): string
-    {
-        $number = self::toDecimalApp(static::$value, static::$precision);
-
-        return $number ? static::currency().' '.$number : '';
-    }
-
-
-    public static function fromMoneyApp(): string
-    {
-        $number = self::fromDecimalApp(static::$value, static::$precision);
-
-        return $number ? static::currency().' '.$number : '';
-    }
-
-
-    public static function toDecimalApp(): string
-    {
-        $value = static::$value;
-        if(is_null($value) || ($value === 'null')) return null;
+        $value = $this->value;
+        
+        if(is_null($value) || ($value === 'null')) return '';
 
         $precision = static::$precision;
         $value = str_replace('.', '', $value);
@@ -153,10 +128,32 @@ class Number extends BaseNumber
 
         return $value;
     }
-    
-    public static function fromDecimalApp(): string
+
+    public function toDecimalRaw(): string
     {
-        $value = static::$value;
+        $value = $this->value;
+        $precision = static::$precision;
+        $parts = explode('.', $value);
+        $decimal = count($parts) > 1? $parts[1] : '';
+        $value = number_format(self::toFormatApp($value), $precision, '.', '');
+
+        return str_pad($value, $precision - strlen($decimal), '0');
+    }
+
+    public function fromIntegerApp(): string
+    {
+        return self::fromDecimalApp($this->value, 0);
+    }
+
+    public function fromMoneyApp(): string
+    {
+        $number = self::fromDecimalApp();
+        return static::symbol().' '.$number;
+    }
+    
+    public function fromDecimalApp(): string
+    {
+        $value = $this->value;
         if(is_null($value) || ($value === 'null')) return '';
 
         $precision = static::$precision;
@@ -167,69 +164,47 @@ class Number extends BaseNumber
         return str_pad($value, $precision - strlen($decimal), '0');
     }
 
-
-    public static function toDecimalRaw(): string
+    public function applyDiscount($percentage = 0)
     {
-        $value = static::$value;
-        $precision = static::$precision;
-        $parts = explode('.', $value);
-        $decimal = count($parts) > 1? $parts[1] : '';
-        $value = number_format(self::toFormatApp($value), $precision, '.', '');
-
-        return str_pad($value, $precision - strlen($decimal), '0');
+        $value = $this->value;
+        $this->value = bcsub($value, bcmul($value, bcdiv((string)$percentage, '100')));
     }
 
-
-    public static function applyDiscount($percentage = 0): string
+    public function applyRate($percentage = 0)
     {
-        $value = static::$value;
-        return bcsub($value, bcmul($value, bcdiv((string)$percentage, '100')));
+        $value = $this->value;
+        $this->value = bcadd($value, bcmul($value, bcdiv((string)$percentage, '100')));
     }
 
-
-    public static function applyRate($percentage = 0): string
-    {
-        $value = static::$value;
-        return bcadd($value, bcmul($value, bcdiv((string)$percentage, '100')));
-    }
-
-
-    public static function perc($total, $part): float
+    public function perc($total, $part)
     {
         $total = floatval($total);
-
-        return floatval($total? bcmul(bcdiv((string)$part, (string)$total, 8), '100', static::$precision) : 0);
+        $this->value = floatval($total? bcmul(bcdiv((string)$part, (string)$total, 8), '100', static::$precision) : 0);
     }
 
-    #[\Override]
-    public static function percentage($percentage): float
+    public function percent($percentage)
     {
-        $value = static::$value;
-        return floatval($value? bcdiv(bcmul((string)$percentage, (string)$value, 3), '100', 3) : 0);
+        $value = $this->value;
+        $this->value = floatval($value? bcdiv(bcmul((string)$percentage, (string)$value, 3), '100', 3) : 0);
     }
 
-
-    public static function prop($total, $part): float
+    public function prop($total, $part)
     {
         $total2 = floatval($total);
-
-        return floatval($total2? bcdiv(bcmul((string)$part, '100', 8), (string)$total, static::$precision) : 0);
+        $this->value = floatval($total2? bcdiv(bcmul((string)$part, '100', 8), (string)$total, static::$precision) : 0);
     }
 
-
-    public static function valueToPerc($percentage): float
+    public function valueToPerc($percentage)
     {
-        return floatval(bcmul(bcdiv($percentage, '100', 3), (string)static::$value, static::$precision));
+        $this->value = floatval(bcmul(bcdiv($percentage, '100', 3), (string)$this->value, static::$precision));
     }
 
-
-    public static function isMoneyApp(): bool
+    public function isMoneyApp(): bool
     {
-        return static::isDecimalApp(static::$value);
+        return static::isDecimalApp($this->value);
     }
 
-
-    public static function isDecimalApp(): bool
+    public function isDecimalApp($number = null): bool
     {
         $precision = static::$precision;
         $key = $precision > 0? 1 : 0;
@@ -242,28 +217,37 @@ class Number extends BaseNumber
 
         $pattern = str_replace(':p', (string)$precision, $patterns[$fmt][$key]);
 
-        return (bool)preg_match($pattern, (string)static::$value);
+        return (bool)preg_match($pattern, (string)$this->value ?? $number);
     }
 
-
-    public static function truncate($decimal = '.')
+    public function truncate($decimal = '.')
     {
-        $number = str_replace(',', '.', static::$value);
+        $number = str_replace(',', '.', $this->value);
         $precision = static::$precision;
-        return substr($number, 0, (strpos($number, $decimal) ?: strlen($number)) +$precision + ($precision == 0 ? 0 : 1));
+        $this->value = substr($number, 0, (strpos($number, $decimal) ?: strlen($number)) +$precision + ($precision == 0 ? 0 : 1));
     }
 
-
-    public static function toFormatApp()
+    public function toFormatApp(): float
     {
-        $value = (string)static::$value;
+        $value = (string)$this->value;
         $value = str_replace('.', ',', $value);
         $value = Str::replaceLast(',', '.', $value);
         $value = str_replace(',', '', $value);
         $value = floatval($value);
 
         return $value;
+    }
 
+    public function sum($value)
+    {
+        $this->value = bcadd($this->value, (string)$value);
+        return new static($this->value);
+    }
+
+    public function sub($value)
+    {
+        $this->value = bcsub($this->value, (string)$value);
+        return new static($this->value);
     }
 
 }
