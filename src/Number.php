@@ -250,4 +250,88 @@ class Number extends BaseNumber  implements Stringable
         return new static($this->value);
     }
 
+    /**
+     * Verifica se o valor interno é estritamente igual a $value2,
+     * usando bccomp para precisão.
+     * @param mixed $value2 O valor para comparação.
+     * @return bool Retorna true se os valores forem iguais.
+     */
+    public static function equals($value1, $value2): bool
+    {
+        $value1 = self::toFormatApp($value1);
+        $value2 = self::toFormatApp($value2);
+
+        return bccomp((string)$value1, (string)$value2, static::$precision) == 0;
+    }
+
+    /**
+     * Verifica se o valor interno é diferente de $value2.
+     * (bccomp retorna -1 ou 1)
+     * @param mixed $value2 O valor para comparação.
+     * @return bool Retorna true se os valores forem diferentes.
+     */
+    public static function notEquals($value1, $value2): bool
+    {
+        $value1 = self::toFormatApp($value1);
+        $value2 = self::toFormatApp($value2);
+
+        return bccomp((string)$value1, (string)$value2, static::$precision) != 0;
+    }
+
+    /**
+     * Verifica se o valor interno é maior que $value2.
+     * (bccomp retorna 1)
+     * @param mixed $value2 O valor para comparação.
+     * @return bool Retorna true se o valor interno for maior.
+     */
+    public static function greaterThan($value1, $value2): bool
+    {
+        $value1 = self::toFormatApp($value1);
+        $value2 = self::toFormatApp($value2);
+
+        return bccomp((string)$value1, (string)$value2, static::$precision) == 1;
+    }
+
+    /**
+     * Verifica se o valor interno é maior ou igual a $value2.
+     * (bccomp retorna 0 ou 1)
+     * @param mixed $value2 O valor para comparação.
+     * @return bool Retorna true se o valor interno for maior ou igual.
+     */
+    public static function greaterThanOrEquals($value1, $value2): bool
+    {
+        $value1 = self::toFormatApp($value1);
+        $value2 = self::toFormatApp($value2);
+
+        return bccomp((string)$value1, (string)$value2, static::$precision) >= 0;
+    }
+
+    /**
+     * Verifica se o valor interno é menor que $value2.
+     * (bccomp retorna -1)
+     * @param mixed $value2 O valor para comparação.
+     * @return bool Retorna true se o valor interno for menor.
+     */
+    public static function lessThan($value1, $value2): bool
+    {
+        $value1 = self::toFormatApp($value1);
+        $value2 = self::toFormatApp($value2);
+
+        return bccomp((string)$value1, (string)$value2, static::$precision) == -1;
+    }
+
+    /**
+     * Verifica se o valor interno é menor ou igual a $value2.
+     * (bccomp retorna -1 ou 0)
+     * @param mixed $value2 O valor para comparação.
+     * @return bool Retorna true se o valor interno for menor ou igual.
+     */
+    public static function lessThanOrEquals($value1, $value2): bool
+    {
+        $value1 = self::toFormatApp($value1);
+        $value2 = self::toFormatApp($value2);
+
+        return bccomp((string)$value1, (string)$value2, static::$precision) <= 0;
+    }
+
 }

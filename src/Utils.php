@@ -17,6 +17,43 @@ use Carbon\Carbon;
 class Utils
 {
     /**
+     * States list
+     * @return array
+     */
+    public static function states(): array
+    {
+        return [
+            'AC' => 'Acre',
+            'AL' => 'Alagoas',
+            'AP' => 'Amapá',
+            'AM' => 'Amazonas',
+            'BA' => 'Bahia',
+            'CE' => 'Ceará',
+            'DF' => 'Distrito Federal',
+            'ES' => 'Espírito Santo',
+            'GO' => 'Goiás',
+            'MA' => 'Maranhão',
+            'MT' => 'Mato Grosso',
+            'MS' => 'Mato Grosso do Sul',
+            'MG' => 'Minas Gerais',
+            'PA' => 'Pará',
+            'PB' => 'Paraíba',
+            'PR' => 'Paraná',
+            'PE' => 'Pernambuco',
+            'PI' => 'Piauí',
+            'RJ' => 'Rio de Janeiro',
+            'RN' => 'Rio Grande do Norte',
+            'RS' => 'Rio Grande do Sul',
+            'RO' => 'Rondônia',
+            'RR' => 'Roraima',
+            'SC' => 'Santa Catarina',
+            'SP' => 'São Paulo',
+            'SE' => 'Sergipe',
+            'TO' => 'Tocantins',
+        ];
+    }
+
+    /**
      * Month list
      * @return array
      */
@@ -111,6 +148,11 @@ class Utils
         return is_array(json_decode($string, true)) && (json_last_error() == JSON_ERROR_NONE) ? true : false;
     }
 
+    public static function addDDI(string $number, $code = '55'): string
+    {
+        return Str::padLeft($number, Str::length($number) == 10 ? 12 : 13, $code);
+    }
+
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types/Common_types
     public static function mimeType(string $extension):string
     {
@@ -154,5 +196,13 @@ class Utils
         return vsprintf(str_replace('?', '%s', $query->toSql()), collect($query->getBindings())->map(function ($binding) {
             return is_numeric($binding) ? $binding : "'{$binding}'";
         })->toArray());
+    }
+
+    public static function hours2Seconds($hours): int
+    {
+        if (!is_numeric($hours) || $hours < 0) 
+            return 0;
+        
+        return (int) round($hours * 3600);
     }
 }

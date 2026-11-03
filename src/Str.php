@@ -116,7 +116,7 @@ class Str extends StrBase
         return self::random(8);
     }
 
-    public static function basicMask(string $str, $mask): string
+    public static function format(string $str, $mask): string
     {
         /*
            ($cnpj, '##.###.###/####-##')
@@ -255,5 +255,195 @@ class Str extends StrBase
     public static function withoutSpecialChars(string $str): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '', $str);
+    }
+
+    public static function onlyNumbersAndLetters(string $str): string
+    {
+        return preg_replace('/[^a-zA-Z0-9]/', '', $str);
+    }
+
+    public static function hasCharacts(string $str): bool
+    {
+        return preg_match("/[a-z]/i", $str);
+    }
+
+    protected static function convertChunkPtBr($number, $units, $tens, $hundreds)
+    {
+        if ($number === 100) {
+            return 'cem';
+        }
+
+        $text = '';
+
+        $hundred = intdiv($number, 100);
+        $remainder = $number % 100;
+
+        if ($hundred > 0) {
+            $text .= $hundreds[$hundred];
+        }
+
+        if ($remainder > 0) {
+            if ($text !== '') {
+                $text .= ' e ';
+            }
+
+            if ($remainder < 20) {
+                $text .= $units[$remainder];
+            } else {
+                $text .= $tens[intdiv($remainder, 10)];
+                if ($remainder % 10 > 0) {
+                    $text .= ' e ' . $units[$remainder % 10];
+                }
+            }
+        }
+
+        return $text;
+    }
+
+    public static function normalizeEmail(string $email): string
+    {
+        $email = trim($email);
+
+        $email = mb_strtolower($email, 'UTF-8');
+
+        $email = filter_var($email, FILTER_SANITIZE_EMAIL);
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $email;
+        }
+
+        return $email;
+    }
+
+    public static function numberToWords($value)
+    {
+        $value = number_format($value, 2, '.', '');
+        [$integerPart, $decimalPart] = explode('.', $value);
+
+        $units = [
+            '', 'um', 'dois', 'três', 'quatro', 'cinco',
+            'seis', 'sete', 'oito', 'nove', 'dez', 'onze',
+            'doze', 'treze', 'quatorze', 'quinze',
+            'dezesseis', 'dezessete', 'dezoito', 'dezenove'
+        ];
+
+        $tens = [
+            '', '', 'vinte', 'trinta', 'quarenta',
+            'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'
+        ];
+
+        $hundreds = [
+            '', 'cento', 'duzentos', 'trezentos', 'quatrocentos',
+            'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'
+        ];
+
+        $scales = [
+            '', 'mil', 'milhão', 'bilhão', 'trilhão'
+        ];
+
+        $number = (int) $integerPart;
+
+        if ($number === 0) {
+            $words = 'zero';
+        } else {
+            $words = '';
+            $scaleIndex = 0;
+
+            while ($number > 0) {
+                $chunk = $number % 1000;
+
+                if ($chunk > 0) {
+                    $chunkWords = static::convertChunkPtBr($chunk, $units, $tens, $hundreds);
+
+                    if ($chunk === 1 && $scaleIndex === 1) {
+                        $chunkWords = 'Um';
+                    }
+
+                    if ($scaleIndex > 0) {
+                        if ($chunk > 1 && $scaleIndex > 1) {
+                            $chunkWords .= ' ' . $scales[$scaleIndex] . 's';
+                        } else {
+                            $chunkWords .= ' ' . $scales[$scaleIndex];
+                        }
+                    }
+
+                    $words = $chunkWords . ($words ? ', ' . $words : '');
+                }
+
+                $number = intdiv($number, 1000);
+                $scaleIndex++;
+            }
+        }
+
+        // Currency (Reais)
+        $result = ucfirst(trim($words)) . ' reais';
+
+        // Cents
+        if ((int)$decimalPart > 0) {
+            $centWords = self::numberToWords((int)$decimalPart);
+            $centWords = strtolower(str_replace([' reais', ' real'], '', $centWords));
+            $result .= ' e ' . $centWords . ' centavo' . ((int)$decimalPart !== 1 ? 's' : '');
+        }
+
+        return $result;
+    }
+
+    public static function fromCronApp(string $cronExpression): string
+    {
+        // Traduções para os campos cron
+    $translations = [
+        'minute' => 'minuto',
+        'hour' => 'hora',
+        'day' => 'dia',
+        'month' => 'mês',
+        'day_of_week' => 'dia da semana',
+        '*' => 'a cada', 
+        ',' => ',',
+        '-' => 'de',
+        '/' => 'a cada',
+    ];
+
+    // Nomes dos meses em português
+    $monthNames = [
+        'jan' => 'janeiro',
+        'feb' => 'fevereiro',
+        'mar' => 'março',
+        'apr' => 'abril',
+        'may' => 'maio',
+        'jun' => 'junho',
+        'jul' => 'julho',
+        'aug' => 'agosto',
+        'sep' => 'setembro',
+        'oct' => 'outubro',
+        'nov' => 'novembro',
+        'dec' => 'dezembro',
+    ];
+
+    // Dividir a expressão cron em campos
+    $cronFields = explode(' ', $cronExpression);
+
+    // Formatar cada campo
+    $formattedCron = '';
+    foreach ($cronFields as $index => $field) {
+        $fieldParts = explode(',', $field);
+        $translatedParts = [];
+        foreach ($fieldParts as $part) {
+            // Traduzir partes do campo cron
+            $translatedPart = strtr($part, $translations);
+            // Traduzir o nome do mês se aplicável
+            if ($index === 3 && array_key_exists(strtolower($part), $monthNames)) {
+                $translatedPart = $monthNames[strtolower($part)];
+            }
+            $translatedParts[] = $translatedPart;
+        }
+        // Unir as partes traduzidas com vírgulas
+        $translatedField = implode(' e ', $translatedParts);
+        $formattedCron .= $translatedField;
+        if ($index < count($cronFields) - 1) {
+            $formattedCron .= ' ';
+        }
+    }
+
+    return ucfirst($formattedCron); // Capitalizar a primeira letra para melhor legibilidade
     }
 }
